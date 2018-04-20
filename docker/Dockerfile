@@ -1,0 +1,14 @@
+FROM alpine:edge
+
+ARG PROXY_USER
+ARG PROXY_PASSWORD
+ARG PROXY_INTERFACE
+ARG PROXY_PORT
+
+COPY setup-image /
+COPY sockd.conf /etc/sockd.conf
+RUN /setup-image "$PROXY_USER" "$PROXY_PASSWORD" "$PROXY_INTERFACE" "$PROXY_PORT"
+
+EXPOSE $PROXY_PORT
+
+ENTRYPOINT sleep 2 && /usr/sbin/sockd

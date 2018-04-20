@@ -1,0 +1,46 @@
+#!/bin/bash
+
+set -e
+
+PROXY_USER=proxyuser
+PROXY_PASSWORD=`< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c8`
+PROXY_INTERFACE=eth0
+PROXY_PORT=1080
+
+readonly CONTAINER_NAME=virgil
+
+readonly SCRIPT_DIR=`dirname $0`
+readonly CONF_FILE="$SCRIPT_DIR/$CONTAINER_NAME.conf"
+
+# Print a message
+print_msg() {
+    echo ""
+    echo "========== $@ =========="
+}
+
+if [ -f "$CONF_FILE" ]; then
+    . "$CONF_FILE"
+fi
+
+echo "PROXY_USER=$PROXY_USER" > "$CONF_FILE"
+echo "PROXY_PASSWORD=$PROXY_PASSWORD" >> "$CONF_FILE"
+echo "PROXY_INTERFACE=$PROXY_INTERFACE" >> "$CONF_FILE"
+echo "PROXY_PORT=$PROXY_PORT" >> "$CONF_FILE"
+
+print_msg "Building new container"
+docker build -t $CONTAINER_NAME \
+       --build-arg PROXY_USER="$PROXY_USER" \
+       --build-arg PROXY_PASSWORD="$PROXY_PASSWORD" \
+       --build-arg PROXY_INTERFACE="$PROXY_INTERFACE" \
+       --build-arg PROXY_PORT="$PROXY_PORT" \
+       "$SCRIPT_DIR/docker"
+
+print_msg "Stopping old container"
+docker stop $CONTAINER_NAME || true
+
+print_msg "Removing old container"
+docker rm $CONTAINER_NAME || true
+
+print_msg "Starting new container"
+docker run --name $CONTAINER_NAME --restart on-failure -d \
+       --net=host -p $PROXY_PORT:$PROXY_PORT $CONTAINER_NAME

@@ -1,0 +1,20 @@
+#!/bin/ash
+
+set -e
+
+PROXY_USER="$1"
+PROXY_PASSWORD="$2"
+PROXY_INTERFACE="$3"
+PROXY_PORT="$4"
+
+# Install Dante
+echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
+apk --no-cache add dante-server
+sed -i "s/\$PROXY_INTERFACE/$PROXY_INTERFACE/" /etc/sockd.conf
+sed -i "s/\$PROXY_PORT/$PROXY_PORT/" /etc/sockd.conf
+
+# Add proxy user
+adduser -h /dev/null -s /sbin/nologin -D "$PROXY_USER"
+echo "$PROXY_USER:$PROXY_PASSWORD" | chpasswd
+
+rm /setup-image
